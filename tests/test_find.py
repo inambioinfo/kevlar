@@ -11,17 +11,12 @@
 import glob
 import pytest
 import re
-import sys
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
 import kevlar
 from khmer import Counttable
 
 
 @pytest.fixture
-def trio_args():
+def trio_args(capsys):
     args = type('', (), {})()
 
     args.controls = glob.glob('tests/data/trio1/ctrl[1,2].fq')
@@ -30,12 +25,10 @@ def trio_args():
     args.ksize = 13
     args.memory = 1e6
     args.max_fpr = 0.2
-    args.out = StringIO()
     args.flush = False
     args.collapse = False
     args.batch = None
     args.upint = 1000
-    args.logfile = StringIO()
     args.cases = ['tests/data/trio1/case1.fq']
 
     return args
@@ -63,13 +56,17 @@ def test_assumptions(kmer):
     ('case5', 'ctrl[3,4]', 1e6),
     ('case6', 'ctrl[5,6]', 1e6),
 ])
-def test_find_single_mutation(case, ctrl, mem, trio_args):
+def test_find_single_mutation(case, ctrl, mem, trio_args, capsys):
+    from sys import stdout, stderr
     trio_args.memory = mem
     trio_args.cases = ['tests/data/trio1/{}.fq'.format(case)]
     trio_args.controls = glob.glob('tests/data/trio1/{}.fq'.format(ctrl))
+    trio_args.out = stdout
+    trio_args.logfile = stderr
     kevlar.find.main(trio_args)
 
-    for line in trio_args.out.getvalue().split('\n'):
+    out, err = capsys.readouterr()
+    for line in out.split('\n'):
         if not line.endswith('#'):
             continue
         abundmatch = re.search('(\d+) (\d+) (\d+)#$', line)
@@ -81,7 +78,8 @@ def test_find_single_mutation(case, ctrl, mem, trio_args):
         assert ctl1 == 0 and ctl2 == 0
 
 
-def test_find_two_cases(trio_args):
+def test_find_two_cases(trio_args, capsys):
+    from sys import stdout, stderr
     pattern = 'tests/data/trio1/case{}.fq'
     trio_args.cases = [pattern.format(n) for n in ('6', '6b')]
     trio_args.controls = glob.glob('tests/data/trio1/ctrl[5,6].fq')
@@ -89,10 +87,13 @@ def test_find_two_cases(trio_args):
     trio_args.case_min = 7
     trio_args.ksize = 19
     trio_args.memory = 1e7
+    trio_args.out = stdout
+    trio_args.logfile = stderr
     kevlar.find.main(trio_args)
+    out, err = capsys.readouterr()
 
-    assert trio_args.out.getvalue().strip() != ''
-    for line in trio_args.out.getvalue().split('\n'):
+    assert out.strip() != ''
+    for line in out.split('\n'):
         if not line.endswith('#'):
             continue
         abundmatch = re.search('(\d+) (\d+) (\d+) (\d+)#$', line)
@@ -105,7 +106,8 @@ def test_find_two_cases(trio_args):
         assert ctl1 <= 1 and ctl2 <= 1
 
 
-def test_kmer_rep_in_read():
+def test_kmer_rep_in_read(capsys):
+    from sys import stdout
     read = ('AGGATGAGGATGAGGATGAGGATGAGGATGAGGATGAGGATGAGGATGAGGATGAGGATGAGGAT'
             'GAGGATGAGGATGAGGAT')
     record = type('', (), {})()
@@ -114,15 +116,17 @@ def test_kmer_rep_in_read():
     kmers = dict()
     kmers[2] = ['GATGAGGATGAGGATGAGGATGAGG', 11, 1, 0]
     kmers[8] = ['GATGAGGATGAGGATGAGGATGAGG', 11, 1, 0]
-    outstream = StringIO()
+    outstream = stdout
     kevlar.find.print_interesting_read(record, kmers, outstream)
-    assert read in outstream.getvalue()
+    out, err = capsys.readouterr()
+    assert read in out
 
-    outstream = StringIO()
+    outstream = stdout
     kmers[14] = ['GATGAGGATGAGGATGAGGATGAGG', 11, 1, 0]
     kmers[20] = ['GATGAGGATGAGGATGAGGATGAGG', 11, 1, 0]
     kevlar.find.print_interesting_read(record, kmers, outstream)
-    assert outstream.getvalue() == ''
+    out, err = capsys.readouterr()
+    assert out == ''
 
 
 def test_iter_screed():
