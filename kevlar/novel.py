@@ -21,20 +21,44 @@ import screed
 
 
 def subparser(subparsers):
-    subparser = subparsers.add_parser('novel', add_help=False)
+    epilog = """Example:
+
+    kevlar novel \\
+        --cases proband.fastq \\
+        --controls mother.fastq father.fastq \\
+        --out proband.novel.unfiltered.augfastq
+
+Example:
+
+    kevlar novel \\
+        --cases proband.counttable \\
+        --controls mother.counttable father.counttable \\
+        --out proband.novel.unfiltered.augfastq \\
+        proband.fastq
+    """
+
+    subparser = subparsers.add_parser(
+        'novel', add_help=False, epilog=epilog,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    subparser.add_argument('caseseqs', nargs='*', help='case sequence file')
 
     samp_args = subparser.add_argument_group(
         'Case and control configuration',
         'Specify input files and thresholds for identifying "interesting" '
         'k-mers, which are high abundance in each case sample and absent (or '
-        'low abundance) in each control sample.'
+        'low abundance) in each control sample. The `--memory` argument is '
+        'ignored when loading count tables. **NOTE**: if count tables are '
+        'provided via the "--cases" flag, corresponding sequence files must '
+        'be provided as positional arguments (see "caseseq" in usage '
+        'statement).'
     )
-    samp_args.add_argument('--cases', metavar='F', nargs='+',
-                           required=True, help='one or more Fastq files '
+    samp_args.add_argument('--cases', metavar='F', nargs='+', required=True,
+                           help='one or more Fastq files (or count tables) '
                            'corresponding to case sample(s)')
     samp_args.add_argument('--controls', metavar='F', nargs='+',
-                           required=True, help='one or more Fastq files '
-                           'corresponding to control sample(s)')
+                           required=True, help='one or more Fastq files (or '
+                           'count tables) corresponding to control sample(s)')
     samp_args.add_argument('-x', '--ctrl_max', metavar='X', type=int,
                            default=1, help='k-mers with abund > X in any '
                            'control sample are uninteresting; default=1')
