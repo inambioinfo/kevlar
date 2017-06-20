@@ -85,3 +85,11 @@ class VariantSet(object):
             kmerstr = ','.join(sorted(kmerset))
             print(contigstr, len(readset), len(kmerset), readstr, kmerstr,
                   sep='\t', file=outstream)
+
+    def write_fasta(self, outstream=stdout):
+        for n, contigdata in enumerate(self):
+            mincontig, maxcontig, kmerset, readset = contigdata
+            contigname = 'contig{n} nreads={nr} nikmers={nk}'.format(
+                n=n, nr=len(readset), nk=len(kmerset)
+            )
+            print('>', contigname, '\n', mincontig, sep='', file=outstream)
