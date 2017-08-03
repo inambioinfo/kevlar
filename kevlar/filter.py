@@ -16,7 +16,8 @@ from khmer import khmer_args
 import kevlar
 
 
-def load_refr(refrfile, ksize, memory, maxfpr=0.001, logfile=sys.stderr):
+def load_refr(refrfile, ksize, memory, maxfpr=0.001, savefile=None,
+              logfile=sys.stderr):
     """Load reference genome or contaminant database from a file."""
     buckets = memory * khmer._buckets_per_byte['nodegraph'] / 4
     refr = khmer.Nodetable(ksize, buckets, 4)
@@ -28,6 +29,13 @@ def load_refr(refrfile, ksize, memory, maxfpr=0.001, logfile=sys.stderr):
     if fpr > maxfpr:
         print('[kevlar::filter] FPR too high, bailing out', file=logfile)
         sys.exit(1)
+    if savefile:
+        outfilename = savefile
+        if not outfilename.endswith(('.nt', '.nodetable')):
+            outfilename += '.nodetable'
+        refr.save(outfilename)
+        message = '    nodetable saved to "{:s}"'.format(outfilename)
+        print(message, file=logfile)
     return refr
 
 
@@ -126,7 +134,8 @@ def main(args):
         print('[kevlar::filter] Loading reference genome from',
               args.refr, file=args.logfile)
         refr = load_refr(args.refr, args.ksize, args.refr_memory,
-                         args.refr_max_fpr, args.logfile)
+                         maxfpr=args.refr_max_fpr, savefile=args.refr_save,
+                         logfile=args.logfile)
         elapsed = timer.stop('loadrefr')
         print('[kevlar::filter]',
               'Reference genome loaded in {:.2f} sec'.format(elapsed),
@@ -138,7 +147,8 @@ def main(args):
         print('[kevlar::filter] Loading contaminants from', args.contam,
               file=args.logfile)
         contam = load_refr(args.contam, args.ksize, args.contam_memory,
-                           args.contam_max_fpr, args.logfile)
+                           maxfpr=args.contam_max_fpr,
+                           savefile=args.contam_save, logfile=args.logfile)
         elapsed = timer.stop('loadcontam')
         print('[kevlar::filter]',
               'Contaminant database loaded in {:.2f} sec'.format(elapsed),

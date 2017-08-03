@@ -38,6 +38,9 @@ def subparser(subparsers):
                            default=0.001, help='terminate if the expected '
                            'false positive rate is higher than the specified '
                            'FPR; default is 0.001')
+    refr_args.add_argument('--refr-save', type=str, metavar='FILE',
+                           default=None, help='save reference nodetable to '
+                           'the specified FILE')
 
     contam_args = subparser.add_argument_group(
         'Screening for known contaminants',
@@ -57,6 +60,9 @@ def subparser(subparsers):
                              default=0.001, help='terminate if the expected '
                              'false positive rate is higher than the specified'
                              ' FPR; default is 0.001')
+    contam_args.add_argument('--contam-save', type=str, metavar='FILE',
+                             default=None, help='save contaminants nodetable '
+                             'to the specified FILE')
 
     filter_args = subparser.add_argument_group(
         'Filtering k-mers',
